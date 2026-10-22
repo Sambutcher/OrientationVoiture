@@ -1,0 +1,135 @@
+# Distillation d'Orient Anything (ViT-L) en un MobileNetV3-Small à 8 secteurs d'azimut, sur CPU
+# (le PC de dev n'a pas l'AVX). Résultat : artefact « orientation-tfjs » à copier dans
+# models/orientation/, avec rapport.md et planche.jpg.
+# Lancement : gh workflow run distillation.yml -R Sambutcher/OrientationVoiture --ref <branche>
+# Essai rapide : -f max_train=64 -f max_val=32 -f morceaux=2 -f epoques=1
+name: Distillation
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_train:
+        default: '12000'
+      max_val:
+        default: '2000'
+      morceaux:
+        description: Étiquetage réparti sur autant de machines
+        default: '16'
+      epoques:
+        default: '25'
+
+env:
+  TORCH: torch==2.2.1 torchvision==0.17.1 --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+
+jobs:
+  selection:
+    runs-on: ubuntu-24.04
+    outputs:
+      morceaux: ${{ steps.matrice.outputs.liste }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install "numpy<2" pillow
+      - name: Annotations COCO 2017
+        run: |
+          curl -sfLo ann.zip http://images.cocodataset.org/annotations/annotations_trainval2017.zip
+          unzip -q -j ann.zip annotations/instances_train2017.json annotations/instances_val2017.json -d annotations
+      - name: Recadrages de voitures
+        working-directory: distillation
+        run: python selection.py ../annotations ../donnees --max-train ${{ inputs.max_train }} --max-val ${{ inputs.max_val }}
+      - id: matrice
+        run: echo "liste=$(python -c 'print(list(range(${{ inputs.morceaux }})))')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: donnees
+          path: donnees/
+          retention-days: 7
+
+  etiquetage:
+    needs: selection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    strategy:
+      matrix:
+        morceau: ${{ fromJson(needs.selection.outputs.morceaux) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install $TORCH transformers==4.38.2 huggingface-hub==0.26.5 "numpy<2" pillow "rembg[cpu]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: donnees
+          path: donnees
+      - name: Professeur Orient Anything
+        working-directory: distillation
+        run: python etiqueter.py ../donnees ${{ matrix.morceau }} ${{ inputs.morceaux }} ../etiquettes-${{ matrix.morceau }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etiquettes-${{ matrix.morceau }}
+          path: etiquettes-${{ matrix.morceau }}.json
+          retention-days: 7
+
+  apprentissage:
+    needs: etiquetage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install $TORCH "numpy<2" pillow onnx==1.16.1
+      - uses: actions/download-artifact@v4
+        with:
+          name: donnees
+          path: donnees
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: etiquettes-*
+          path: etiquettes
+          merge-multiple: true
+      - name: Élève MobileNetV3-Small
+        working-directory: distillation
+        run: python entrainer.py ../donnees ../etiquettes ../eleve --epoques ${{ inputs.epoques }}
+      - run: cp -r etiquettes eleve/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eleve
+          path: eleve/
+
+  conversion:
+    needs: apprentissage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Installer onnx2tf et tensorflowjs
+        run: |
+          pip install "tensorflow==2.17.1" "tf_keras==2.17.0" "onnx==1.16.1" "onnxruntime==1.18.1" \
+            "onnx2tf==1.25.7" onnx_graphsurgeon sng4onnx psutil "tensorflowjs==4.22.0" "numpy<2"
+      - uses: actions/download-artifact@v4
+        with:
+          name: eleve
+          path: eleve
+      - name: Convertir
+        run: distillation/convertir.sh eleve/eleve.onnx
+      - name: Vérifier avec TF.js
+        run: |
+          npm install --no-save @tensorflow/tfjs-node@4.22.0
+          node distillation/verifier_tfjs.mjs models/orientation eleve/reference
+      - run: |
+          cp eleve/rapport.md eleve/planche.jpg models/orientation/
+          cat eleve/rapport.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orientation-tfjs
+          path: models/orientation/
