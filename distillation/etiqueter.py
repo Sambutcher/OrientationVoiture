@@ -6,7 +6,7 @@ d'évaluation, on mesure aussi ce que donneraient des variantes plus légères (
 112 px, sans détourage) pour les comparer à l'élève.
 
 Modèle repris d'Orient Anything (Wang et al. 2024, https://github.com/SpatialVision/Orient-Anything,
-CC BY 4.0) : DINOv2 puis MLP, sorties 360 azimuts + 180 élévations + 360 rotations + 2 confiance.
+CC BY 4.0) : DINOv2 puis MLP, sorties 360 azimuts + élévation + rotation + 2 confiance.
 """
 import json
 import sys
@@ -42,9 +42,11 @@ class OrientAnything(nn.Module):
     def __init__(self, dino, dim, poids):
         super().__init__()
         self.dinov2 = Dinov2Model.from_pretrained(dino)
-        self.down_sampler = MLP(dim, 360 + 180 + 360 + 2)
-        chemin = hf_hub_download("Viglong/Orient-Anything", poids)
-        self.load_state_dict(torch.load(chemin, map_location="cpu"))
+        etat = torch.load(hf_hub_download("Viglong/Orient-Anything", poids), map_location="cpu")
+        # 902 sorties en général ; 722 pour certains checkpoints (rotation sur 180 cases) :
+        # l'azimut reste les 360 premières, la confiance les 2 dernières.
+        self.down_sampler = MLP(dim, etat["down_sampler.net2.0.weight"].shape[0])
+        self.load_state_dict(etat)
         self.eval()
 
     @torch.no_grad()

@@ -1,9 +1,9 @@
 # Distillation d'Orient Anything (ViT-L) en un MobileNetV3-Small à 8 secteurs d'azimut, sur CPU
-# Calcul sur CPU de GitHub Actions, dépôt public : minutes illimitées, 20 machines en parallèle.
 # (le PC de dev n'a pas l'AVX). Résultat : artefact « orientation-tfjs » à copier dans
 # models/orientation/, avec rapport.md et planche.jpg.
+# Calcul sur CPU de GitHub Actions, dépôt public : minutes illimitées, 20 machines en parallèle.
 # Lancement : gh workflow run distillation.yml -R Sambutcher/OrientationVoiture --ref <branche>
-# Essai rapide : -f max_train=64 -f max_val=32 -f morceaux=2 -f epoques=1
+# Essai rapide : -f max_train=300 -f max_val=40 -f morceaux=2 -f epoques=2
 name: Distillation
 
 on:
