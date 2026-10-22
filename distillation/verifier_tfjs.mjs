@@ -12,7 +12,11 @@ console.log('entrée', modele.inputs.map((i) => `${i.name} ${i.shape}`), 'sortie
 const ref = JSON.parse(await readFile(resolve(dossierRef, 'sortie.json'), 'utf8'));
 const brut = await readFile(resolve(dossierRef, 'entree.bin'));
 const entree = tf.tensor(new Float32Array(brut.buffer, brut.byteOffset, brut.length / 4), ref.forme);
-const obtenu = await modele.predict(entree).array();
+// Lot fixé à 1 par la conversion : une image à la fois.
+const obtenu = [];
+for (let i = 0; i < ref.forme[0]; i++) {
+  obtenu.push((await modele.predict(entree.slice([i], [1])).array())[0]);
+}
 
 const argmax = (v) => v.indexOf(Math.max(...v));
 let ecart = 0;
