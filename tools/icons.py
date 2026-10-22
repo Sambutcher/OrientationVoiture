@@ -1,30 +1,36 @@
 #!/usr/bin/env python3
-"""Génère les icônes de la PWA (nécessite Pillow, par ex. le Python du pipx ultralytics :
-~/.local/share/pipx/venvs/ultralytics/bin/python tools/icons.py)."""
+"""Génère les icônes de la PWA (nécessite Pillow) : python3 tools/icons.py"""
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
 DOSSIER = Path(__file__).resolve().parent.parent / "icons"
 ECHELLE = 4  # dessin sur-échantillonné puis réduit pour lisser les bords
+JAUNE = "#ffd23f"
+
+
+def tourner(points, angle, cx, cy):
+    c, s = math.cos(angle), math.sin(angle)
+    return [(cx + x * c - y * s, cy + x * s + y * c) for x, y in points]
 
 
 def icone(taille):
     t = taille * ECHELLE
     img = Image.new("RGB", (t, t), "#111111")
     d = ImageDraw.Draw(img)
-    # Plaque verticale à angles droits comme la cible du jeu, 3 ronds dont le premier blanchi.
-    w, h = t * 0.34, t * 0.74
-    x0, y0 = (t - w) / 2, (t - h) / 2
-    d.rectangle([x0, y0, x0 + w, y0 + h], fill="#f4f4f0")
-    r = min(w / 2, h / 6) * 0.65
-    for i, f in enumerate((1 / 6, 1 / 2, 5 / 6)):
-        cx, cy = t / 2, y0 + h * f
-        boite = [cx - r, cy - r, cx + r, cy + r]
-        if i == 0:
-            d.ellipse(boite, fill="#ffffff", outline="#999999", width=ECHELLE * max(1, taille // 96))
-        else:
-            d.ellipse(boite, fill="#111111")
+    # Boussole comme dans l'appli : cercle, repère « nous » en bas, voiture vue de dessus de trois-quarts.
+    r = t * 0.36
+    cx, cy = t / 2, t * 0.47
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill="#262626", outline="#3a3a3a", width=ECHELLE * 2)
+    m = t * 0.05
+    d.polygon([(cx, cy + r - m * 0.6), (cx - m, cy + r + m), (cx + m, cy + r + m)], fill="#ffffff")
+    w, h = r * 0.62, r * 1.3
+    angle = math.radians(180 - 45)  # avant vers nous et vers la droite
+    caisse = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]
+    d.polygon(tourner(caisse, angle, cx, cy), fill=JAUNE)
+    pare_brise = [(-w * 0.36, -h * 0.3), (w * 0.36, -h * 0.3), (w * 0.36, -h * 0.14), (-w * 0.36, -h * 0.14)]
+    d.polygon(tourner(pare_brise, angle, cx, cy), fill="#222222")
     return img.resize((taille, taille), Image.LANCZOS)
 
 
