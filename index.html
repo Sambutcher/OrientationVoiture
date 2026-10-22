@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Orientation voiture</title>
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Orientation">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/tf.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <video id="video" playsinline muted></video>
+  <canvas id="vue"></canvas>
+  <div id="accueil">
+    <h1>Orientation voiture</h1>
+    <p>Filmez la rue : chaque voiture reçoit son orientation (de face, de profil, de dos…),
+      vue de dessus sur la boussole. Fonctionne hors connexion.</p>
+    <button id="demarrer" type="button">Démarrer</button>
+    <p id="statut"></p>
+    <p id="version">v0.1.0</p>
+  </div>
+</body>
+</html>
