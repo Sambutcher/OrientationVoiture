@@ -8,8 +8,9 @@ export const GRIS = 'rgb(128,128,128)';
 
 // Secteur k du modèle (azimut d'Orient Anything ≈ k × 45°, 0 = voiture vue de face) → cap de la
 // voiture vu de dessus : 0° = elle vient vers nous, 90° = elle va vers la droite de l'image,
-// 180° = elle s'éloigne. SENS : signe reliant l'azimut à ce cap (vérifié sur planche.jpg).
-const SENS = 1;
+// 180° = elle s'éloigne. SENS : signe reliant l'azimut à ce cap. Vérifié sur planche.jpg de la
+// distillation : à 90° les voitures ont l'avant à gauche de l'image, à 270° à droite.
+const SENS = -1;
 export const NB_SECTEURS = 8;
 
 const NOMS = [

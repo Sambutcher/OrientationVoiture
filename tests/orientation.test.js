@@ -29,6 +29,9 @@ test('8 secteurs distincts, de face au secteur 0, et le miroir inverse la direct
   assert.equal(noms.size, NB_SECTEURS);
   assert.equal(nomSecteur(0), 'de face');
   assert.equal(nomSecteur(4), 'de dos');
+  // Convention d'Orient Anything vérifiée sur planche.jpg : azimut 90° = avant à gauche de l'image.
+  assert.equal(nomSecteur(2), 'de profil, vers la gauche');
+  assert.equal(nomSecteur(7), 'trois-quarts avant, vers la droite');
   for (let k = 1; k < NB_SECTEURS; k++) {
     // Retournement horizontal : secteur k ↔ 8 − k, la droite devient la gauche.
     const miroir = nomSecteur(NB_SECTEURS - k);

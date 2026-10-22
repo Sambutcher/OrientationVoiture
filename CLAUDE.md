@@ -15,8 +15,12 @@
   `gh workflow run distillation.yml -R Sambutcher/OrientationVoiture --ref premiere-version -f max_train=300 -f max_val=40 -f morceaux=2 -f epoques=2`.
   Résultat : artefact `orientation-tfjs` (avec `rapport.md` et `planche.jpg`) à copier dans `models/orientation/`.
 - La découpe doit rester identique entre `distillation/commun.py` et `js/orientation.js`.
-  `SENS` de `js/orientation.js` relie l'azimut d'Orient Anything au cap affiché (0° = la voiture
-  vient vers nous, 90° = vers la droite) : à vérifier sur `planche.jpg` après chaque distillation.
+- Convention d'Orient Anything vérifiée sur `models/orientation/planche.jpg` : azimut 0° de face,
+  90° profil avant à gauche de l'image, 180° de dos, 270° profil avant à droite (`SENS = -1`
+  dans `js/orientation.js`, verrouillé par un test).
+- Distillation v0.1.0 (run 39787124427) : 6 752 voitures COCO train, 276 d'évaluation ; élève
+  d'accord avec le professeur à 70 % (secteur exact) / 83 % (à un secteur près), contre 73 / 90 %
+  pour ViT-L sans détourage, 54 / 73 % ViT-S 224 px, 45 / 61 % ViT-S 112 px. Voir `rapport.md`.
 - Logique pure (`js/orientation.js`, `js/geometry.js`) testée par `node --test tests/`
   (Node 18 apt, pas de npm). Garder le DOM et `tf` hors de ces modules.
 - Tout fichier servi doit figurer dans `FICHIERS` de `sw.js` ; `VERSION` (sw.js + index.html)
