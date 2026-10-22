@@ -8,6 +8,9 @@ TRAVAIL="$(mktemp -d)"
 trap 'rm -rf "$TRAVAIL"' EXIT
 cd "$TRAVAIL"
 
+# onnx2tf compare ONNX et TF sur 20 images qu'il télécharge, et ce téléchargement échoue : on lui
+# fournit le fichier attendu (bruit, il ne sert qu'à la comparaison).
+python3 -c 'import numpy as np; np.save("calibration_image_sample_data_20x128x128x3_float32.npy", np.random.rand(20, 128, 128, 3).astype(np.float32))'
 onnx2tf -i "$ONNX" -o saved_model -ois image:1,3,128,128 -osd
 
 # tensorflowjs importe tensorflow_decision_forests sans s'en servir, et celui-ci casse protobuf :

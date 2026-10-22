@@ -18,6 +18,9 @@ from commun import recadrer
 CATEGORIE_VOITURE = 3  # « car » dans les annotations COCO
 LARGEUR_MIN = 64  # px : en dessous, l'orientation devient illisible
 HAUTEUR_MIN = 48
+# Surface du masque / surface de la boîte : une voiture entière remplit ~70–85 % de sa boîte ;
+# bien moins, elle est cachée par un passant, un poteau ou une autre voiture.
+REMPLISSAGE_MIN = 0.55
 
 
 def voitures(fichier, maximum, graine):
@@ -27,7 +30,9 @@ def voitures(fichier, maximum, graine):
         a for a in coco["annotations"]
         if a["category_id"] == CATEGORIE_VOITURE and not a["iscrowd"]
         and a["bbox"][2] >= LARGEUR_MIN and a["bbox"][3] >= HAUTEUR_MIN
+        and a["area"] >= REMPLISSAGE_MIN * a["bbox"][2] * a["bbox"][3]
     ]
+    print(f"{Path(fichier).name} : {len(retenues)} voitures retenues", flush=True)
     random.Random(graine).shuffle(retenues)
     retenues = retenues[:maximum]
     return [(a, images[a["image_id"]]) for a in retenues]
